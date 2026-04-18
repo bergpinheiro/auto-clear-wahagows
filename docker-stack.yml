@@ -1,23 +1,50 @@
 # Docker Swarm — deploy: docker stack deploy -c docker-stack.yml auto-clear-wahagows
-# Defina as variáveis no ambiente ou: export $(grep -v '^#' .env | xargs) antes do deploy
+# Defina as variáveis no ambiente do manager antes do deploy (ou carregue um .env).
 
 services:
   auto-clear-wahagows:
     image: weblooks/auto-clear-wahagows:latest
     environment:
+      # Obrigatória. Mesma URL PostgreSQL que a WAHA usa para sessões (senha não vai para os logs).
       WHATSAPP_SESSIONS_POSTGRESQL_URL: ${WHATSAPP_SESSIONS_POSTGRESQL_URL:?set WHATSAPP_SESSIONS_POSTGRESQL_URL}
+
+      # Motor GOWS → segmento do nome do banco (ex.: waha_gows_<sessão>). Alinhar com o container WAHA.
       WHATSAPP_DEFAULT_ENGINE: ${WHATSAPP_DEFAULT_ENGINE:-GOWS}
+
+      # Lista de sessões a limpar (vírgulas). Obrigatória só sem API: sem WAHA_BASE_URL ou WAHA_USE_SESSION_API=false.
+      # Com API ativa, falha/vazio na API → job não limpa (sem usar isto como fallback).
       SESSION_NAMES: ${SESSION_NAMES:-default}
+
+      # Sessões a nunca limpar (vírgulas; comparação case-insensitive). Opcional. Alias: SESSION_NAMES_IGNORE.
       IGNORE_SESSION_NAMES: ${IGNORE_SESSION_NAMES:-}
+
+      # Dias de retenção; corte = hoje menos N dias (calendário).
       RETENTION_DAYS: ${RETENTION_DAYS:-90}
+
+      # Fuso IANA para o agendador CRON (ex.: Europe/Lisbon).
       TZ: ${TZ:-UTC}
+
+      # Cron de 6 campos: segundo minuto hora dia mês dia-da-semana.
       CRON: ${CRON:-0 0 2 * * *}
+
+      # false = DELETE real; true = só COUNT, sem apagar.
       DRY_RUN: ${DRY_RUN:-false}
+
+      # true = um job ao subir o serviço, depois segue o CRON.
       RUN_ON_START: ${RUN_ON_START:-false}
+
+      # Nível: debug | info | warn | error
       LOG_LEVEL: ${LOG_LEVEL:-info}
+
+      # false/0 = ignorar API e usar só SESSION_NAMES. Com true e WAHA_BASE_URL, lista sessões via API.
       WAHA_USE_SESSION_API: ${WAHA_USE_SESSION_API:-true}
+
+      # Base URL da WAHA para GET /api/sessions?all=true (ex.: http://waha:3000). Vazio = modo só env.
       WAHA_BASE_URL: ${WAHA_BASE_URL:-}
+
+      # Cabeçalho X-Api-Key na API da WAHA, se a instância exigir.
       WAHA_API_KEY: ${WAHA_API_KEY:-}
+
     networks:
       - traefik-public
     deploy:
