@@ -1,0 +1,19 @@
+services:
+  auto-clear-wahagows:
+    build: .
+    image: auto-clear-wahagows:local
+    restart: unless-stopped
+    environment:
+      WHATSAPP_SESSIONS_POSTGRESQL_URL: ${WHATSAPP_SESSIONS_POSTGRESQL_URL:?set in .env}
+      WHATSAPP_DEFAULT_ENGINE: ${WHATSAPP_DEFAULT_ENGINE:-GOWS}
+      SESSION_NAMES: ${SESSION_NAMES:-default}
+      IGNORE_SESSION_NAMES: ${IGNORE_SESSION_NAMES:-}
+      RETENTION_DAYS: ${RETENTION_DAYS:-90}
+      TZ: ${TZ:-UTC}
+      CRON: ${CRON:-0 0 2 * * *}
+      DRY_RUN: ${DRY_RUN:-false}
+      RUN_ON_START: ${RUN_ON_START:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Optional WAHA session discovery:
+      # WAHA_BASE_URL: http://waha:3000
+      # WAHA_API_KEY: ${WAHA_API_KEY}

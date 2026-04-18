@@ -1,0 +1,17 @@
+{
+  "name": "auto-clear-wahagows",
+  "version": "1.0.0",
+  "description": "Periodic GOWS gows_messages cleanup for WAHA Plus PostgreSQL session storage",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "cron-parser": "^5.4.0",
+    "pg": "^8.13.1"
+  }
+}
