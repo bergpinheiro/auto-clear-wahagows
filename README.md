@@ -14,7 +14,7 @@ Serviço **Node.js** em **Docker** que remove periodicamente linhas antigas da t
 | `WHATSAPP_SESSIONS_POSTGRESQL_URL` | Sim | URL PostgreSQL (mesma da WAHA). A senha não é logada. |
 | `WHATSAPP_DEFAULT_ENGINE` | Recomendado | Ex.: `GOWS` → segmento `gows` no nome do banco (`waha_gows_<sessão>`). É a forma principal de alinhar com a WAHA em modo GOWS. |
 | `WAHA_SESSION_NAMESPACE` | Não | Só se precisar de paridade com uma WAHA que define namespace explícito; caso contrário use `WHATSAPP_DEFAULT_ENGINE`. Resolução neste serviço: `WHATSAPP_DEFAULT_ENGINE` → `WAHA_SESSION_NAMESPACE` → `WEBJS`. |
-| `SESSION_NAMES` | Condicional | Lista separada por vírgulas. Obrigatória se não houver lista via API ou API falhar/vazia. |
+| `SESSION_NAMES` | Condicional | Lista separada por vírgulas. Obrigatória **só** em modo só-env (`WAHA_BASE_URL` ausente ou `WAHA_USE_SESSION_API=false`). Com API ativa, falha ou lista vazia na WAHA → o job termina sem limpar (sem erro), sem usar `SESSION_NAMES` como fallback. |
 | `IGNORE_SESSION_NAMES` | Não | Lista separada por vírgulas: sessões que **nunca** entram na limpeza (match sem diferenciar maiúsculas/minúsculas). Vale para API e para `SESSION_NAMES`. Alias: `SESSION_NAMES_IGNORE`. |
 | `RETENTION_DAYS` | Não | Padrão `90`. Dias a manter; corte = hoje menos N dias (estilo `setDate` do JS). |
 | `WAHA_BASE_URL` | Não | Base URL da WAHA para `GET /api/sessions?all=true`. |

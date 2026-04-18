@@ -127,6 +127,7 @@ async function fetchSessionsFromWaha() {
 
 /**
  * @param {Set<string>} ignoreSessionNames lowercased session names
+ * @returns {Promise<{ source: string, globalRetention: number, targets: Array<{sessionName: string, retentionDays: number, skippedReason: string | null}>, skipReason?: string }>}
  */
 async function resolveSessionTargets(ignoreSessionNames) {
   const globalRetention = parseInt(process.env.RETENTION_DAYS || '90', 10);
@@ -137,19 +138,40 @@ async function resolveSessionTargets(ignoreSessionNames) {
   const useWahaApi =
     process.env.WAHA_USE_SESSION_API !== 'false' &&
     process.env.WAHA_USE_SESSION_API !== '0';
+  const wahaBase = process.env.WAHA_BASE_URL?.trim();
+  const wantsApi = Boolean(useWahaApi && wahaBase);
 
-  const fromApi =
-    useWahaApi && process.env.WAHA_BASE_URL
-      ? await fetchSessionsFromWaha().catch((err) => {
-          log('warn', {
-            event: 'waha_api_failed',
-            message: err instanceof Error ? err.message : String(err),
-          });
-          return null;
-        })
-      : null;
+  if (wantsApi) {
+    const fromApi = await fetchSessionsFromWaha().catch((err) => {
+      log('warn', {
+        event: 'waha_api_failed',
+        message: err instanceof Error ? err.message : String(err),
+      });
+      return null;
+    });
 
-  if (Array.isArray(fromApi) && fromApi.length >= 0) {
+    if (fromApi === null) {
+      return {
+        source: 'waha_api',
+        globalRetention,
+        targets: [],
+        skipReason: 'api_unavailable',
+      };
+    }
+
+    if (!Array.isArray(fromApi)) {
+      log('warn', {
+        event: 'waha_api_invalid_response',
+        detail: typeof fromApi,
+      });
+      return {
+        source: 'waha_api',
+        globalRetention,
+        targets: [],
+        skipReason: 'api_invalid_response',
+      };
+    }
+
     const targets = [];
     for (const item of fromApi) {
       if (!item || typeof item !== 'object' || typeof item.name !== 'string') {
@@ -178,9 +200,17 @@ async function resolveSessionTargets(ignoreSessionNames) {
         skippedReason: null,
       });
     }
-    if (targets.length > 0) {
-      return { source: 'waha_api', globalRetention, targets };
+
+    if (targets.length === 0) {
+      return {
+        source: 'waha_api',
+        globalRetention,
+        targets: [],
+        skipReason: 'api_empty_or_no_valid_sessions',
+      };
     }
+
+    return { source: 'waha_api', globalRetention, targets };
   }
 
   const namesRaw = process.env.SESSION_NAMES || '';
@@ -190,7 +220,7 @@ async function resolveSessionTargets(ignoreSessionNames) {
     .filter(Boolean);
   if (sessionNames.length === 0) {
     throw new Error(
-      'Set SESSION_NAMES or configure WAHA_BASE_URL with a reachable /api/sessions?all=true',
+      'Set SESSION_NAMES when WAHA_BASE_URL is unset or WAHA_USE_SESSION_API is false',
     );
   }
 
@@ -356,7 +386,7 @@ async function runJob() {
     ignoredSessionNamesCount: ignoreSessionNames.size,
   });
 
-  const { source, globalRetention, targets } =
+  const { source, globalRetention, targets, skipReason } =
     await resolveSessionTargets(ignoreSessionNames);
 
   log('info', {
@@ -364,6 +394,7 @@ async function runJob() {
     source,
     globalRetention,
     sessionCount: targets.length,
+    ...(skipReason ? { skipReason } : {}),
   });
 
   for (const target of targets) {
