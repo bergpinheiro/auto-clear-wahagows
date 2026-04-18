@@ -1,3 +1,4 @@
+# Publicado como: weblooks/auto-clear-wahagows (Docker Hub)
 FROM node:20-alpine
 
 WORKDIR /app

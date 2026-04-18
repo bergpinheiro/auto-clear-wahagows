@@ -1,7 +1,7 @@
 services:
   auto-clear-wahagows:
+    image: weblooks/auto-clear-wahagows:latest
     build: .
-    image: auto-clear-wahagows:local
     restart: unless-stopped
     environment:
       WHATSAPP_SESSIONS_POSTGRESQL_URL: ${WHATSAPP_SESSIONS_POSTGRESQL_URL:?set in .env}

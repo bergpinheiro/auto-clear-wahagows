@@ -55,15 +55,13 @@ node src/index.js
 
 ## Docker
 
-Build:
+Imagem publicada no Docker Hub: **[`weblooks/auto-clear-wahagows`](https://hub.docker.com/r/weblooks/auto-clear-wahagows)**.
+
+Pull e execução (exemplo):
 
 ```bash
-docker build -t auto-clear-wahagows:latest .
-```
+docker pull weblooks/auto-clear-wahagows:latest
 
-Run (exemplo):
-
-```bash
 docker run --rm \
   -e WHATSAPP_SESSIONS_POSTGRESQL_URL="postgresql://user:pass@host:5432/postgres" \
   -e WHATSAPP_DEFAULT_ENGINE=GOWS \
@@ -72,17 +70,40 @@ docker run --rm \
   -e TZ=UTC \
   -e CRON="0 0 2 * * *" \
   -e DRY_RUN=false \
-  auto-clear-wahagows:latest
+  weblooks/auto-clear-wahagows:latest
 ```
 
-Compose (com `.env` na mesma pasta):
+Build local a partir deste repositório (opcional):
+
+```bash
+docker build -t weblooks/auto-clear-wahagows:local .
+```
+
+Compose (com `.env` na mesma pasta; usa a imagem `weblooks/auto-clear-wahagows`):
 
 ```bash
 cp .env.example .env
 # Preencher WHATSAPP_SESSIONS_POSTGRESQL_URL e demais
 
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
+
+Para reconstruir a imagem a partir do código em vez de puxar do Hub: `docker compose up -d --build`.
+
+### Docker Swarm
+
+Ficheiro [`docker-stack.yml`](./docker-stack.yml): rede externa `traefik-public` (overlay já criada noutro stack, p.ex. Traefik).
+
+```bash
+# Na máquina manager, com variáveis exportadas (ou ficheiro .env carregado)
+export WHATSAPP_SESSIONS_POSTGRESQL_URL="postgresql://..."
+# ... demais variáveis conforme .env.example
+
+docker stack deploy -c docker-stack.yml auto-clear-wahagows
+```
+
+Remover o stack: `docker stack rm auto-clear-wahagows`.
 
 ## Comportamento
 

@@ -1,0 +1,45 @@
+# Docker Swarm — deploy: docker stack deploy -c docker-stack.yml auto-clear-wahagows
+# Defina as variáveis no ambiente ou: export $(grep -v '^#' .env | xargs) antes do deploy
+
+services:
+  auto-clear-wahagows:
+    image: weblooks/auto-clear-wahagows:latest
+    environment:
+      WHATSAPP_SESSIONS_POSTGRESQL_URL: ${WHATSAPP_SESSIONS_POSTGRESQL_URL:?set WHATSAPP_SESSIONS_POSTGRESQL_URL}
+      WHATSAPP_DEFAULT_ENGINE: ${WHATSAPP_DEFAULT_ENGINE:-GOWS}
+      SESSION_NAMES: ${SESSION_NAMES:-default}
+      IGNORE_SESSION_NAMES: ${IGNORE_SESSION_NAMES:-}
+      RETENTION_DAYS: ${RETENTION_DAYS:-90}
+      TZ: ${TZ:-UTC}
+      CRON: ${CRON:-0 0 2 * * *}
+      DRY_RUN: ${DRY_RUN:-false}
+      RUN_ON_START: ${RUN_ON_START:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      WAHA_USE_SESSION_API: ${WAHA_USE_SESSION_API:-true}
+      WAHA_BASE_URL: ${WAHA_BASE_URL:-}
+      WAHA_API_KEY: ${WAHA_API_KEY:-}
+    networks:
+      - traefik-public
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+
+networks:
+  traefik-public:
+    external: true
+    name: traefik-public
